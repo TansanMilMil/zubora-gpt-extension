@@ -1,3 +1,5 @@
+type AIService = { name: string; url: string };
+
 import {
   ACTION_INPUT_TO_CHATGPT,
   CONTEXT_MENU_ID,
@@ -11,9 +13,9 @@ function updateContextMenuTitle() {
   chrome.storage.sync.get(
     { ai_services: [], default_ai_service: "" },
     (data) => {
-      const aiServices = data.ai_services || [];
+      const aiServices: AIService[] = data.ai_services || [];
       const defaultUrl = data.default_ai_service;
-      const found = aiServices.find((s) => s.url === defaultUrl);
+      const found = aiServices.find((s: AIService) => s.url === defaultUrl);
       const aiName = found ? found.name : "AI";
       chrome.contextMenus.update(CONTEXT_MENU_ID, {
         title: `${aiName} でサクッと質問`,
@@ -42,8 +44,8 @@ function recreateContextMenus() {
 
     // サブメニューの子（AIサービスごと）
     chrome.storage.sync.get({ ai_services: [] }, (data) => {
-      const aiServices = data.ai_services || [];
-      aiServices.forEach((service, idx) => {
+      const aiServices: AIService[] = data.ai_services || [];
+      aiServices.forEach((service: AIService, idx: number) => {
         chrome.contextMenus.create({
           id: `ask-ai-${idx}`,
           parentId: CONTEXT_MENU_ROOT_ID,
@@ -60,7 +62,15 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // AIサービスでタブを開く共通関数（service指定時はそのサービス、なければデフォルト）
-function openAIServiceWithText(query, service) {
+function openAIServiceWithText(query: string, service?: AIService) {
+  const sendMessageToTab = (tabId: number, messageText: string) => {
+    chrome.tabs.sendMessage(tabId, {
+      action: ACTION_INPUT_TO_CHATGPT,
+      text: query,
+      messageText,
+    });
+  };
+
   if (service) {
     const url = service.url;
     const aiName = service.name;
@@ -68,32 +78,14 @@ function openAIServiceWithText(query, service) {
       ? `クリップボードにコピーしました。${aiName}の入力欄にペーストして送信してください`
       : "クリップボードにコピーしました。AIサービスの入力欄にペーストして送信してください";
     chrome.tabs.create({ url }, (newTab) => {
-      function onUpdated(tabId, info) {
-        if (tabId === newTab.id && info.status === "complete") {
+      function onUpdated(tabId: number, info: any) {
+        if (
+          newTab.id !== undefined &&
+          tabId === newTab.id &&
+          info.status === "complete"
+        ) {
           chrome.tabs.onUpdated.removeListener(onUpdated);
-          chrome.scripting.executeScript(
-            {
-              target: { tabId: newTab.id },
-              files: ["content.js"],
-            },
-            () => {
-              function readyListener(message, sender) {
-                if (
-                  message.action === "contentScriptReady" &&
-                  sender.tab &&
-                  sender.tab.id === newTab.id
-                ) {
-                  chrome.tabs.sendMessage(newTab.id, {
-                    action: ACTION_INPUT_TO_CHATGPT,
-                    text: query,
-                    messageText,
-                  });
-                  chrome.runtime.onMessage.removeListener(readyListener);
-                }
-              }
-              chrome.runtime.onMessage.addListener(readyListener);
-            }
-          );
+          sendMessageToTab(newTab.id, messageText);
         }
       }
       chrome.tabs.onUpdated.addListener(onUpdated);
@@ -104,39 +96,21 @@ function openAIServiceWithText(query, service) {
       { default_ai_service: CHATGPT_URL, ai_services: [] },
       (data) => {
         const url = data.default_ai_service || CHATGPT_URL;
-        const aiServices = data.ai_services || [];
-        const found = aiServices.find((s) => s.url === url);
+        const aiServices: AIService[] = data.ai_services || [];
+        const found = aiServices.find((s: AIService) => s.url === url);
         const aiName = found ? found.name : "";
         const messageText = aiName
           ? `クリップボードにコピーしました。${aiName}の入力欄にペーストして送信してください`
           : "クリップボードにコピーしました。AIサービスの入力欄にペーストして送信してください";
         chrome.tabs.create({ url }, (newTab) => {
-          function onUpdated(tabId, info) {
-            if (tabId === newTab.id && info.status === "complete") {
+          function onUpdated(tabId: number, info: any) {
+            if (
+              newTab.id !== undefined &&
+              tabId === newTab.id &&
+              info.status === "complete"
+            ) {
               chrome.tabs.onUpdated.removeListener(onUpdated);
-              chrome.scripting.executeScript(
-                {
-                  target: { tabId: newTab.id },
-                  files: ["content.js"],
-                },
-                () => {
-                  function readyListener(message, sender) {
-                    if (
-                      message.action === "contentScriptReady" &&
-                      sender.tab &&
-                      sender.tab.id === newTab.id
-                    ) {
-                      chrome.tabs.sendMessage(newTab.id, {
-                        action: ACTION_INPUT_TO_CHATGPT,
-                        text: query,
-                        messageText,
-                      });
-                      chrome.runtime.onMessage.removeListener(readyListener);
-                    }
-                  }
-                  chrome.runtime.onMessage.addListener(readyListener);
-                }
-              );
+              sendMessageToTab(newTab.id, messageText);
             }
           }
           chrome.tabs.onUpdated.addListener(onUpdated);
@@ -147,21 +121,25 @@ function openAIServiceWithText(query, service) {
 }
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === CONTEXT_MENU_ID) {
-    const selectedText = info.selectionText;
+  const menuItemId = info.menuItemId as string;
+  if (menuItemId === CONTEXT_MENU_ID) {
+    const selectedText = info.selectionText as string;
     chrome.storage.sync.get({ prompt: "" }, (data) => {
       const prompt = data.prompt || "";
       const query = prompt + selectedText;
       openAIServiceWithText(query);
     });
-  } else if (info.menuItemId.startsWith("ask-ai-")) {
+  } else if (
+    typeof menuItemId === "string" &&
+    menuItemId.startsWith("ask-ai-")
+  ) {
     // サブメニューで選択されたAIサービスで開く
-    const idx = parseInt(info.menuItemId.replace("ask-ai-", ""), 10);
-    const selectedText = info.selectionText;
+    const idx = parseInt(menuItemId.replace("ask-ai-", ""), 10);
+    const selectedText = info.selectionText as string;
     chrome.storage.sync.get({ prompt: "", ai_services: [] }, (data) => {
       const prompt = data.prompt || "";
       const query = prompt + selectedText;
-      const aiServices = data.ai_services || [];
+      const aiServices: AIService[] = data.ai_services || [];
       const service = aiServices[idx];
       if (service) {
         openAIServiceWithText(query, service);
@@ -175,16 +153,16 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   if (command === "run-chatgpt") {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const activeTab = tabs[0];
+      if (!activeTab || activeTab.id === undefined) return;
       chrome.scripting.executeScript(
         {
           target: { tabId: activeTab.id },
-          func: () => window.getSelection().toString(),
+          func: () => window.getSelection()?.toString() ?? "",
         },
         (results) => {
-          const selectedText = results && results[0] ? results[0].result : "";
-          if (!selectedText) {
-            return;
-          }
+          if (!results || !results[0]) return;
+          const selectedText = results[0].result;
+          if (!selectedText) return;
           chrome.storage.sync.get({ prompt: "" }, (data) => {
             const prompt = data.prompt || "";
             const query = prompt + selectedText;

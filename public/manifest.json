@@ -33,5 +33,11 @@
       },
       "description": "選択テキストをAIサービスに送信"
     }
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
 }

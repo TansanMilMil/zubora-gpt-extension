@@ -1,3 +1,4 @@
+console.log("content script loaded");
 const ACTION_INPUT_TO_CHATGPT = "inputToChatGPT";
 const TEXTAREA_SELECTOR = "textarea";
 const INTERVAL_MS = 500;
@@ -43,7 +44,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       msg.style.padding = "12px 20px";
       msg.style.borderRadius = "8px";
       msg.style.fontSize = "16px";
-      msg.style.zIndex = 9999;
+      msg.style.zIndex = "9999";
       msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
       msg.classList.add("zubora-gpt-anim");
       document.body.appendChild(msg);
