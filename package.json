@@ -1,6 +1,14 @@
 {
+  "name": "zubora-gpt-extension",
+  "version": "1.0.0",
+  "description": "Zubora GPT Extension。どうせ誰も読まない説明文。",
+  "author": "",
+  "license": "MIT",
   "scripts": {
-    "build": "vite build"
+    "build:content": "vite build --config vite.config.content.ts",
+    "build:background": "vite build --config vite.config.background.ts",
+    "build:options": "vite build --config vite.config.options.ts",
+    "build": "npm run build:content && npm run build:background && npm run build:options"
   },
   "dependencies": {
     "typescript": "^5.8.3"

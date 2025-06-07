@@ -1,18 +1,33 @@
 {
+  // TypeScriptのコンパイラオプション
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    // 出力先ディレクトリ
     "outDir": "dist",
+    // ルートディレクトリ
     "baseUrl": ".",
+    // 対象のECMAScriptバージョン
+    "target": "ESNext",
+    // モジュールシステム
+    "module": "ESNext",
+    // モジュール解決方法
+    "moduleResolution": "Node",
+    // 厳格な型チェック
+    "strict": true,
+    // import/exportの互換性
+    "esModuleInterop": true,
+    // ファイル名の大文字小文字の一貫性
+    "forceConsistentCasingInFileNames": true,
+    // 型定義ファイルのスキップ
+    "skipLibCheck": true,
+    // JSファイルを許可しない
     "allowJs": false,
+    // JSONモジュールのインポートを許可
     "resolveJsonModule": true,
+    // 型定義の追加
     "types": ["chrome"]
   },
+  // コンパイル対象
   "include": ["src/**/*"],
+  // 除外ディレクトリ
   "exclude": ["node_modules", "dist"]
 }

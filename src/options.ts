@@ -1,12 +1,14 @@
-type AIService = { name: string; url: string };
-
-const STORAGE_KEY_PROMPT = "prompt";
-const SAVE_BUTTON_ID = "save";
-const STATUS_ID = "status";
-const STATUS_TIMEOUT_MS = 1500;
-const STORAGE_KEY_AI_SERVICES = "ai_services";
-const STORAGE_KEY_DEFAULT_AI = "default_ai_service";
-const AI_STATUS_ID = "ai-status";
+import {
+  STORAGE_KEY_PROMPT,
+  SAVE_BUTTON_ID,
+  STATUS_ID,
+  STATUS_TIMEOUT_MS,
+  STORAGE_KEY_AI_SERVICES,
+  STORAGE_KEY_DEFAULT_AI,
+  AI_STATUS_ID,
+} from "./constants.js";
+import { AIService } from "./types.js";
+import { showToast } from "./toast.js";
 // import { STORAGE_KEY_PROMPT, SAVE_BUTTON_ID, STATUS_ID, STATUS_TIMEOUT_MS } from "./constants.js";
 
 function renderAIServiceList(services: AIService[]): void {
@@ -49,47 +51,28 @@ function renderAIDefaultSelect(services: AIService[], selected?: string): void {
 }
 
 function showAIStatus(msg: string): void {
-  // 既存のトーストがあれば消す
-  const oldToast = document.getElementById("zubora-toast");
-  if (oldToast) oldToast.remove();
-
-  const toast = document.createElement("div");
-  toast.id = "zubora-toast";
-  toast.textContent = msg;
-  toast.style.position = "fixed";
-  toast.style.right = "24px";
-  toast.style.bottom = "24px";
-  toast.style.background = "#222";
-  toast.style.color = "#fff";
-  toast.style.padding = "12px 20px";
-  toast.style.borderRadius = "8px";
-  toast.style.fontSize = "16px";
-  toast.style.zIndex = "9999";
-  toast.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-  toast.style.opacity = "0";
-  toast.style.transition = "opacity 0.3s, transform 0.3s";
-  toast.style.transform = "translateY(20px) scale(0.98)";
-  document.body.appendChild(toast);
-  // アニメーションでふわっと表示
-  setTimeout(() => {
-    toast.style.opacity = "1";
-    toast.style.transform = "translateY(0) scale(1)";
-  }, 10);
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(20px) scale(0.98)";
-    setTimeout(() => toast.remove(), 300);
-  }, STATUS_TIMEOUT_MS + 800);
+  showToast(msg);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initPromptInput();
+  initAIServiceSettings();
+  bindSavePromptButton();
+  bindShowAddAIFormButton();
+  bindSaveAISettingsButton();
+  bindCancelAddAIServiceButton();
+});
+
+function initPromptInput() {
   chrome.storage.sync.get({ prompt: "" }, (data: { prompt: string }) => {
     const promptInput = document.getElementById(
       "prompt"
     ) as HTMLTextAreaElement | null;
     if (promptInput) promptInput.value = data.prompt;
   });
+}
 
+function initAIServiceSettings() {
   chrome.storage.sync.get(
     { [STORAGE_KEY_AI_SERVICES]: [], [STORAGE_KEY_DEFAULT_AI]: "" },
     (data: {
@@ -103,7 +86,9 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   );
+}
 
+function bindSavePromptButton() {
   const saveBtn = document.getElementById("save") as HTMLButtonElement | null;
   if (saveBtn) {
     saveBtn.addEventListener("click", () => {
@@ -117,8 +102,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
+}
 
-  // 「AIサービスを追加」ボタンでフォーム表示時にイベントバインド
+function bindShowAddAIFormButton() {
   const showBtn = document.getElementById(
     "show-add-ai-form"
   ) as HTMLButtonElement | null;
@@ -182,7 +168,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+}
 
+function bindSaveAISettingsButton() {
   const saveAISettingsBtn = document.getElementById(
     "save-ai-settings"
   ) as HTMLButtonElement | null;
@@ -198,8 +186,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
+}
 
-  // キャンセルボタンのイベントバインド
+function bindCancelAddAIServiceButton() {
+  const showBtn = document.getElementById(
+    "show-add-ai-form"
+  ) as HTMLButtonElement | null;
+  const form = document.getElementById("add-ai-form") as HTMLDivElement | null;
   const cancelBtn = document.getElementById(
     "cancel-add-ai-service"
   ) as HTMLButtonElement | null;
@@ -217,4 +210,4 @@ document.addEventListener("DOMContentLoaded", () => {
       if (urlInput) urlInput.value = "";
     });
   }
-});
+}

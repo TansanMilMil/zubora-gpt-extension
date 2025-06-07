@@ -1,9 +1,11 @@
-type AIService = { name: string; url: string };
+import { AIService } from "./types.js";
 
 import {
   ACTION_INPUT_TO_CHATGPT,
   CONTEXT_MENU_ID,
   CHATGPT_URL,
+  STORAGE_KEY_AI_SERVICES,
+  STORAGE_KEY_DEFAULT_AI,
 } from "./constants.js";
 
 const CONTEXT_MENU_ROOT_ID = "ask-ai-root";
