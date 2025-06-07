@@ -49,12 +49,37 @@ function renderAIDefaultSelect(services: AIService[], selected?: string): void {
 }
 
 function showAIStatus(msg: string): void {
-  const status = document.getElementById(AI_STATUS_ID) as HTMLElement | null;
-  if (!status) return;
-  status.textContent = msg;
+  // 既存のトーストがあれば消す
+  const oldToast = document.getElementById("zubora-toast");
+  if (oldToast) oldToast.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "zubora-toast";
+  toast.textContent = msg;
+  toast.style.position = "fixed";
+  toast.style.right = "24px";
+  toast.style.bottom = "24px";
+  toast.style.background = "#222";
+  toast.style.color = "#fff";
+  toast.style.padding = "12px 20px";
+  toast.style.borderRadius = "8px";
+  toast.style.fontSize = "16px";
+  toast.style.zIndex = "9999";
+  toast.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+  toast.style.opacity = "0";
+  toast.style.transition = "opacity 0.3s, transform 0.3s";
+  toast.style.transform = "translateY(20px) scale(0.98)";
+  document.body.appendChild(toast);
+  // アニメーションでふわっと表示
   setTimeout(() => {
-    if (status) status.textContent = "";
-  }, STATUS_TIMEOUT_MS);
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0) scale(1)";
+  }, 10);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(20px) scale(0.98)";
+    setTimeout(() => toast.remove(), 300);
+  }, STATUS_TIMEOUT_MS + 800);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -88,11 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!promptInput) return;
       const prompt = promptInput.value;
       chrome.storage.sync.set({ prompt }, () => {
-        const status = document.getElementById("status") as HTMLElement | null;
-        if (status) status.textContent = "保存しました";
-        setTimeout(() => {
-          if (status) status.textContent = "";
-        }, STATUS_TIMEOUT_MS);
+        showAIStatus("保存しました");
       });
     });
   }
