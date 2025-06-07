@@ -3,11 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <title>ChatGPT拡張オプション</title>
+    <style>
+      body {
+        min-width: 300px;
+        min-height: 250px;
+        font-family: sans-serif;
+        margin: 16px;
+      }
+      #status {
+        margin-top: 8px;
+        color: green;
+      }
+      input,
+      button {
+        font-size: 1em;
+        margin-top: 4px;
+      }
+    </style>
   </head>
   <body>
     <h1>ChatGPT拡張オプション</h1>
     <label>プロンプト（選択テキストの前に付与されます）:</label><br />
-    <input type="text" id="prompt" style="width: 80%" /><br />
+    <textarea
+      id="prompt"
+      style="width: 90%; min-height: 60px; font-size: 1em"
+    ></textarea
+    ><br />
     <button id="save">保存</button>
     <p id="status"></p>
     <script src="options.js"></script>
