@@ -58,7 +58,32 @@ function recreateContextMenus() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  recreateContextMenus();
+  // デフォルトAIサービスリスト
+  const defaultServices = [
+    { name: "ChatGPT", url: "https://chat.openai.com/" },
+    { name: "Gemini", url: "https://gemini.google.com/" },
+    { name: "Claude", url: "https://claude.ai/" },
+  ];
+  chrome.storage.sync.get(["ai_services", "default_ai_service"], (data) => {
+    // すでにai_servicesがあれば何もしない
+    if (
+      !data.ai_services ||
+      !Array.isArray(data.ai_services) ||
+      data.ai_services.length === 0
+    ) {
+      chrome.storage.sync.set(
+        {
+          ai_services: defaultServices,
+          default_ai_service: defaultServices[0].url,
+        },
+        () => {
+          recreateContextMenus();
+        }
+      );
+    } else {
+      recreateContextMenus();
+    }
+  });
 });
 
 // AIサービスでタブを開く共通関数（service指定時はそのサービス、なければデフォルト）
