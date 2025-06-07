@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "選択テキストをChatGPTに尋ねる",
+  "version": "1.0",
+  "description": "右クリックで選択テキストをChatGPTに送信します。",
+  "permissions": ["contextMenus", "storage", "scripting"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  }
+}
