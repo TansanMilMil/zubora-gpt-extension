@@ -4,46 +4,146 @@ import {
   CHATGPT_URL,
 } from "./constants.js";
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: CONTEXT_MENU_ID,
-    title: "選択テキストをChatGPTに尋ねる",
-    contexts: ["selection"],
+const CONTEXT_MENU_ROOT_ID = "ask-ai-root";
+
+// デフォルトAIサービス名を取得して右クリックメニューのタイトルを更新
+function updateContextMenuTitle() {
+  chrome.storage.sync.get(
+    { ai_services: [], default_ai_service: "" },
+    (data) => {
+      const aiServices = data.ai_services || [];
+      const defaultUrl = data.default_ai_service;
+      const found = aiServices.find((s) => s.url === defaultUrl);
+      const aiName = found ? found.name : "AI";
+      chrome.contextMenus.update(CONTEXT_MENU_ID, {
+        title: `${aiName} でサクッと質問`,
+      });
+    }
+  );
+}
+
+// サブメニューを含む右クリックメニューを再生成
+function recreateContextMenus() {
+  chrome.contextMenus.removeAll(() => {
+    // デフォルト（今まで通りの）メニュー
+    chrome.contextMenus.create({
+      id: CONTEXT_MENU_ID,
+      title: "AIにサクッと質問", // 初期値。あとでupdateContextMenuTitleで上書き
+      contexts: ["selection"],
+    });
+    updateContextMenuTitle();
+
+    // サブメニューの親
+    chrome.contextMenus.create({
+      id: CONTEXT_MENU_ROOT_ID,
+      title: "AIサービスを選んで質問",
+      contexts: ["selection"],
+    });
+
+    // サブメニューの子（AIサービスごと）
+    chrome.storage.sync.get({ ai_services: [] }, (data) => {
+      const aiServices = data.ai_services || [];
+      aiServices.forEach((service, idx) => {
+        chrome.contextMenus.create({
+          id: `ask-ai-${idx}`,
+          parentId: CONTEXT_MENU_ROOT_ID,
+          title: service.name,
+          contexts: ["selection"],
+        });
+      });
+    });
   });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  recreateContextMenus();
 });
 
-// ChatGPTタブを開いてテキストを送信する共通関数
-function openChatGPTWithText(query) {
-  chrome.tabs.create({ url: CHATGPT_URL }, (newTab) => {
-    function onUpdated(tabId, info) {
-      if (tabId === newTab.id && info.status === "complete") {
-        chrome.tabs.onUpdated.removeListener(onUpdated);
-        chrome.scripting.executeScript(
-          {
-            target: { tabId: newTab.id },
-            files: ["content.js"],
-          },
-          () => {
-            function readyListener(message, sender) {
-              if (
-                message.action === "contentScriptReady" &&
-                sender.tab &&
-                sender.tab.id === newTab.id
-              ) {
-                chrome.tabs.sendMessage(newTab.id, {
-                  action: ACTION_INPUT_TO_CHATGPT,
-                  text: query,
-                });
-                chrome.runtime.onMessage.removeListener(readyListener);
+// AIサービスでタブを開く共通関数（service指定時はそのサービス、なければデフォルト）
+function openAIServiceWithText(query, service) {
+  if (service) {
+    const url = service.url;
+    const aiName = service.name;
+    const messageText = aiName
+      ? `クリップボードにコピーしました。${aiName}の入力欄にペーストして送信してください`
+      : "クリップボードにコピーしました。AIサービスの入力欄にペーストして送信してください";
+    chrome.tabs.create({ url }, (newTab) => {
+      function onUpdated(tabId, info) {
+        if (tabId === newTab.id && info.status === "complete") {
+          chrome.tabs.onUpdated.removeListener(onUpdated);
+          chrome.scripting.executeScript(
+            {
+              target: { tabId: newTab.id },
+              files: ["content.js"],
+            },
+            () => {
+              function readyListener(message, sender) {
+                if (
+                  message.action === "contentScriptReady" &&
+                  sender.tab &&
+                  sender.tab.id === newTab.id
+                ) {
+                  chrome.tabs.sendMessage(newTab.id, {
+                    action: ACTION_INPUT_TO_CHATGPT,
+                    text: query,
+                    messageText,
+                  });
+                  chrome.runtime.onMessage.removeListener(readyListener);
+                }
               }
+              chrome.runtime.onMessage.addListener(readyListener);
             }
-            chrome.runtime.onMessage.addListener(readyListener);
-          }
-        );
+          );
+        }
       }
-    }
-    chrome.tabs.onUpdated.addListener(onUpdated);
-  });
+      chrome.tabs.onUpdated.addListener(onUpdated);
+    });
+  } else {
+    // デフォルトAIサービス
+    chrome.storage.sync.get(
+      { default_ai_service: CHATGPT_URL, ai_services: [] },
+      (data) => {
+        const url = data.default_ai_service || CHATGPT_URL;
+        const aiServices = data.ai_services || [];
+        const found = aiServices.find((s) => s.url === url);
+        const aiName = found ? found.name : "";
+        const messageText = aiName
+          ? `クリップボードにコピーしました。${aiName}の入力欄にペーストして送信してください`
+          : "クリップボードにコピーしました。AIサービスの入力欄にペーストして送信してください";
+        chrome.tabs.create({ url }, (newTab) => {
+          function onUpdated(tabId, info) {
+            if (tabId === newTab.id && info.status === "complete") {
+              chrome.tabs.onUpdated.removeListener(onUpdated);
+              chrome.scripting.executeScript(
+                {
+                  target: { tabId: newTab.id },
+                  files: ["content.js"],
+                },
+                () => {
+                  function readyListener(message, sender) {
+                    if (
+                      message.action === "contentScriptReady" &&
+                      sender.tab &&
+                      sender.tab.id === newTab.id
+                    ) {
+                      chrome.tabs.sendMessage(newTab.id, {
+                        action: ACTION_INPUT_TO_CHATGPT,
+                        text: query,
+                        messageText,
+                      });
+                      chrome.runtime.onMessage.removeListener(readyListener);
+                    }
+                  }
+                  chrome.runtime.onMessage.addListener(readyListener);
+                }
+              );
+            }
+          }
+          chrome.tabs.onUpdated.addListener(onUpdated);
+        });
+      }
+    );
+  }
 }
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
@@ -52,7 +152,20 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     chrome.storage.sync.get({ prompt: "" }, (data) => {
       const prompt = data.prompt || "";
       const query = prompt + selectedText;
-      openChatGPTWithText(query);
+      openAIServiceWithText(query);
+    });
+  } else if (info.menuItemId.startsWith("ask-ai-")) {
+    // サブメニューで選択されたAIサービスで開く
+    const idx = parseInt(info.menuItemId.replace("ask-ai-", ""), 10);
+    const selectedText = info.selectionText;
+    chrome.storage.sync.get({ prompt: "", ai_services: [] }, (data) => {
+      const prompt = data.prompt || "";
+      const query = prompt + selectedText;
+      const aiServices = data.ai_services || [];
+      const service = aiServices[idx];
+      if (service) {
+        openAIServiceWithText(query, service);
+      }
     });
   }
 });
@@ -75,10 +188,22 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
           chrome.storage.sync.get({ prompt: "" }, (data) => {
             const prompt = data.prompt || "";
             const query = prompt + selectedText;
-            openChatGPTWithText(query);
+            openAIServiceWithText(query);
           });
         }
       );
     });
+  }
+});
+
+// ツールバーアイコンをクリックしたらオプションページを新しいタブで開く
+chrome.action.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("options.html") });
+});
+
+// AI設定が変わったときもメニューを再生成
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "sync" && (changes.ai_services || changes.default_ai_service)) {
+    recreateContextMenus();
   }
 });

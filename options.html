@@ -2,43 +2,195 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <title>ChatGPT拡張オプション</title>
+    <title>ずぼらGPT</title>
     <style>
+      html,
       body {
-        min-width: 300px;
-        min-height: 250px;
-        font-family: sans-serif;
-        margin: 16px;
+        height: 100%;
+        min-height: 100vh;
+        overflow-y: auto;
+        min-width: 520px;
+        width: 520px;
       }
-      #status {
-        margin-top: 8px;
-        color: green;
+      body {
+        min-width: 320px;
+        width: 100vw;
+        overflow-x: hidden;
+        min-height: 320px;
+        font-family: "Segoe UI", "Meiryo", sans-serif;
+        margin: 0;
+        background: #fff;
+        padding: 24px 8px 24px 8px;
+        box-sizing: border-box;
+        font-size: 16px;
+        line-height: 1.5;
       }
-      input,
-      button {
+      h1 {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #3a3a3a;
+      }
+      h2,
+      h3 {
+        font-size: 1.15em;
+        margin: 28px 0 10px 0;
+        color: #4a4a4a;
+      }
+      label {
+        font-weight: bold;
+        margin-right: 4px;
         font-size: 1em;
+      }
+      input[type="text"],
+      textarea,
+      select {
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 1em;
+        margin: 8px 0 16px 0;
+        width: 100%;
+        box-sizing: border-box;
+        background: #fafbfc;
+      }
+      textarea {
+        min-height: 60px;
+        resize: vertical;
+      }
+      button {
+        background: #6c63ff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 22px;
+        font-size: 1em;
+        margin: 10px 0 0 0;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #4b47b6;
+      }
+      #status,
+      #ai-status {
+        margin-top: 8px;
+        color: #1a8a34;
+        font-weight: bold;
+      }
+      hr {
+        margin: 28px 0;
+        border: none;
+        border-top: 1px solid #e0e0e0;
+      }
+      #ai-service-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      #ai-service-list li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f7f7fa;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        padding: 8px 12px;
+        font-size: 0.98em;
+      }
+      #ai-service-list button {
+        background: #e74c3c;
+        color: #fff;
+        padding: 4px 12px;
+        font-size: 0.95em;
+        border-radius: 4px;
+        margin-left: 10px;
+      }
+      #ai-service-list button:hover {
+        background: #b93222;
+      }
+      .ai-form-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .ai-form-vertical label {
+        margin-bottom: 2px;
+        font-weight: bold;
+      }
+      .ai-form-vertical input[type="text"] {
+        width: 100%;
+        margin-bottom: 8px;
+      }
+      .ai-form-vertical button {
+        align-self: flex-end;
         margin-top: 4px;
+      }
+      @media (max-width: 400px) {
+        input,
+        textarea,
+        select {
+          font-size: 0.95em;
+        }
+      }
+      .main-content {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 0 8px;
       }
     </style>
   </head>
   <body>
-    <h1>ChatGPT拡張オプション</h1>
-    <p>
-      ショートカットキーは<a
-        href="vivaldi://extensions/shortcuts"
-        target="_blank"
-        >こちら</a
-      >で設定できます。<br />
-      「選択テキストをChatGPTに送信」のコマンドをCtrl+Shift+Aなどに設定してください。
-    </p>
-    <label>プロンプト（選択テキストの前に付与されます）:</label><br />
-    <textarea
-      id="prompt"
-      style="width: 90%; min-height: 60px; font-size: 1em"
-    ></textarea
-    ><br />
-    <button id="save">保存</button>
-    <p id="status"></p>
+    <div class="main-content">
+      <h1>ずぼらGPT</h1>
+      <p>
+        ショートカットキーは<a
+          href="vivaldi://extensions/shortcuts"
+          target="_blank"
+          >こちら</a
+        >で設定できます。<br />
+      </p>
+      <label>プロンプト（選択テキストの前に付与されます）:</label><br />
+      <textarea
+        id="prompt"
+        style="width: 90%; min-height: 60px; font-size: 1em"
+      ></textarea
+      ><br />
+      <button id="save">保存</button>
+      <hr />
+      <h2>AIサービス管理</h2>
+      <button id="show-add-ai-form" style="margin-bottom: 12px">
+        AIサービスを追加
+      </button>
+      <div class="ai-form-vertical" id="add-ai-form" style="display: none">
+        <label for="ai-service-name">サービス名:</label>
+        <input type="text" id="ai-service-name" />
+        <label for="ai-service-url">サービスURL:</label>
+        <input type="text" id="ai-service-url" />
+        <div style="display: flex; gap: 8px; justify-content: flex-end">
+          <button id="add-ai-service">追加</button>
+          <button
+            id="cancel-add-ai-service"
+            type="button"
+            style="background: #bbb; color: #222"
+          >
+            キャンセル
+          </button>
+        </div>
+      </div>
+      <div>
+        <h3>サービス一覧</h3>
+        <ul id="ai-service-list"></ul>
+      </div>
+      <div>
+        <label>デフォルトで使うAI:</label>
+        <select id="default-ai-service"></select>
+        <button id="save-ai-settings">AI設定を保存</button>
+      </div>
+      <p id="ai-status"></p>
+      <p id="status"></p>
+    </div>
     <script src="options.js"></script>
   </body>
 </html>

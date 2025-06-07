@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "選択テキストをChatGPTに尋ねる",
-  "version": "1.0",
-  "description": "右クリックで選択テキストをChatGPTに送信します。",
+  "name": "ずぼらGPT",
+  "version": "1.0.0",
+  "description": "右クリックで選択テキストをAIサービスに送信します。",
   "permissions": ["contextMenus", "storage", "scripting", "tabs"],
   "background": {
     "service_worker": "background.js",
@@ -10,7 +10,6 @@
   },
   "options_page": "options.html",
   "action": {
-    "default_popup": "options.html",
     "default_icon": {
       "16": "icons/icon.png",
       "48": "icons/icon.png",
@@ -32,7 +31,7 @@
       "suggested_key": {
         "default": "Ctrl+Shift+A"
       },
-      "description": "選択テキストをChatGPTに送信"
+      "description": "選択テキストをAIサービスに送信"
     }
   }
 }

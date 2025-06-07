@@ -12,9 +12,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const inputText = message.text;
     // クリップボードにコピー
     navigator.clipboard.writeText(inputText).then(() => {
+      // アニメーション用CSSを1度だけ注入
+      if (!document.getElementById("zubora-gpt-msg-anim")) {
+        const style = document.createElement("style");
+        style.id = "zubora-gpt-msg-anim";
+        style.textContent = `
+          @keyframes zuboraFadeSlideIn {
+            0% { opacity: 0; transform: translateY(40px) scale(0.95); background: #ffd700; color: #222; }
+            40% { opacity: 1; background: #ffe066; color: #222; }
+            60% { opacity: 1; transform: translateY(-8px) scale(1.03); background: #4f8cff; color: #fff; }
+            80% { opacity: 1; transform: translateY(0) scale(1); background: #222; color: #fff; }
+            100% { opacity: 1; transform: translateY(0) scale(1); background: #222; color: #fff; }
+          }
+          .zubora-gpt-anim {
+            animation: zuboraFadeSlideIn 0.9s cubic-bezier(.23,1.1,.32,1) both;
+          }
+        `;
+        document.head.appendChild(style);
+      }
       // 画面右下にメッセージを表示
       const msg = document.createElement("div");
       msg.textContent =
+        message.messageText ||
         "クリップボードにコピーしました。ChatGPTの入力欄にペーストして送信してください";
       msg.style.position = "fixed";
       msg.style.right = "24px";
@@ -26,6 +45,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       msg.style.fontSize = "16px";
       msg.style.zIndex = 9999;
       msg.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+      msg.classList.add("zubora-gpt-anim");
       document.body.appendChild(msg);
       setTimeout(() => {
         msg.remove();
