@@ -22,5 +22,17 @@
     "48": "icons/icon.png",
     "128": "icons/icon.png"
   },
-  "host_permissions": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "<all_urls>"
+  ],
+  "commands": {
+    "run-chatgpt": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+A"
+      },
+      "description": "選択テキストをChatGPTに送信"
+    }
+  }
 }
